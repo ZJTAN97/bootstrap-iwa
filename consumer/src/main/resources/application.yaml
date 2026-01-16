@@ -1,3 +1,13 @@
 spring:
   application:
     name: consumer
+
+  data:
+    mongodb:
+      database: consumers
+      uri: mongodb://root:secret@localhost:27017/
+
+minio:
+  endpoint: http://localhost:9000
+  username: minioadmin
+  password: minioadmin123
