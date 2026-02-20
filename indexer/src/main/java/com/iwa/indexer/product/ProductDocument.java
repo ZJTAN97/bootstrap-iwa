@@ -10,5 +10,4 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 record ProductDocument(
         @Id String id,
         @Field(type = FieldType.Text) String samAccountName,
-        @Field(type = FieldType.Text) String appointment,
-        @Field(type = FieldType.Nested) List<String> emailAddresses) {}
+        @Field(type = FieldType.Text) String appointment) {}

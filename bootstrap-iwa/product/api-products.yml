@@ -1,0 +1,23 @@
+info:
+  name: /api/products
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8081/api/products
+  body:
+    type: json
+    data: |-
+      {
+        "samAccountName": "Test Account 2",
+        "appointment": "Boss 2",
+        "emailAddresses": ["boss@test.com"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

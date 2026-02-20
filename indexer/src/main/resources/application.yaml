@@ -8,8 +8,7 @@ spring:
     password: secret
   elasticsearch:
     uris: http://localhost:9200
-    username: elastic
-    password: elastic
+
 
 indexer:
   rabbitmq:
