@@ -1,8 +1,9 @@
 package com.iwa.search.product;
 
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,16 +17,19 @@ class ProductService {
         this.repository = repository;
     }
 
-    ProductDocument findById(String id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+    ProductSearchResponse findById(String id) {
+        return repository
+                .findById(id)
+                .map(doc -> new ProductSearchResponse(doc.id(), doc.samAccountName(), doc.appointment(), null))
+                .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
-    List<ProductDocument> findAll() {
-        return (List<ProductDocument>) repository.findAll();
+    Page<ProductDocument> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
-    List<ProductDocument> search(String query) {
+    Page<ProductDocument> search(String query, Pageable pageable) {
         log.info("search_query={}", query);
-        return findAll();
+        return repository.searchByQuery(query, pageable);
     }
 }

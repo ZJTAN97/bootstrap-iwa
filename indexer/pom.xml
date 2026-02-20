@@ -11,7 +11,7 @@
 
 	<artifactId>indexer</artifactId>
 	<name>indexer</name>
-	<description>Indexer Service - RabbitMQ to Elasticsearch</description>
+	<description>Indexer Service</description>
 
 	<properties>
 		<java.version>25</java.version>

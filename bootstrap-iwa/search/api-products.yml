@@ -1,0 +1,15 @@
+info:
+  name: /api/products
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://localhost:8082/api/products
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
