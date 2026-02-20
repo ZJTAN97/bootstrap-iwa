@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: indexer
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: myuser
+    password: secret
+  elasticsearch:
+    uris: http://localhost:9200
+    username: elastic
+    password: elastic
+
+indexer:
+  rabbitmq:
+    exchange: product.exchange
+    queue: product.index.queue
+    routing-key: product.#
+  elasticsearch:
+    index: products

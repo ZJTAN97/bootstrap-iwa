@@ -7,6 +7,16 @@ spring:
       database: products
       uri: mongodb://root:secret@localhost:27017/
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: myuser
+    password: secret
+
+product:
+  rabbitmq:
+    exchange: product.exchange
+
 minio:
   endpoint: http://localhost:9000
   username: minioadmin

@@ -1,3 +1,6 @@
 spring:
   application:
-    name: consumer
+    name: search
+
+  elasticsearch:
+    uris: http://localhost:9200
