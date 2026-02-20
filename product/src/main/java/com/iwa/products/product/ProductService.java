@@ -1,11 +1,13 @@
 package com.iwa.products.product;
 
-import java.util.List;
+import com.iwa.products.exception.ProductNotFoundException;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +36,7 @@ class ProductService {
     }
 
     Product update(ObjectId id, Product product) {
+        repository.findById(id).orElseThrow(() -> new ProductNotFoundException(id.toString()));
         Product updated = new Product(id, product.samAccountName(), product.appointment(), product.emailAddresses());
         Product saved = repository.save(updated);
         log.info("product_updated id={}", saved.id());
@@ -42,20 +45,22 @@ class ProductService {
     }
 
     void delete(ObjectId id) {
+        if (!repository.existsById(id)) {
+            throw new ProductNotFoundException(id.toString());
+        }
         repository.deleteById(id);
         log.info("product_deleted id={}", id);
         ProductEvent event = new ProductEvent(id.toString(), null, null, null, ProductEvent.EventType.DELETED);
-        String routingKey = "product.deleted";
-        rabbitTemplate.convertAndSend(exchange, routingKey, event);
+        rabbitTemplate.convertAndSend(exchange, "product.deleted", event);
         log.info("event_published productId={} eventType=DELETED", id);
     }
 
     Product findById(ObjectId id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+        return repository.findById(id).orElseThrow(() -> new ProductNotFoundException(id.toString()));
     }
 
-    List<Product> findAll() {
-        return repository.findAll();
+    Page<Product> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     private void publishEvent(String productId, Product product, ProductEvent.EventType eventType) {

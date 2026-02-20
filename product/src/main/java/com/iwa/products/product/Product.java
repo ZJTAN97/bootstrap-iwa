@@ -6,4 +6,4 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document("product")
-record Product(@Id ObjectId id, String samAccountName, String appointment, List<String> emailAddresses) {}
+public record Product(@Id ObjectId id, String samAccountName, String appointment, List<String> emailAddresses) {}

@@ -24,8 +24,7 @@ public class ProductIndexingService {
             return;
         }
 
-        ProductDocument document =
-                new ProductDocument(event.id(), event.samAccountName(), event.appointment());
+        ProductDocument document = new ProductDocument(event.id(), event.samAccountName(), event.appointment());
 
         repository.save(document);
         log.info("product_indexed productId={}", event.id());
