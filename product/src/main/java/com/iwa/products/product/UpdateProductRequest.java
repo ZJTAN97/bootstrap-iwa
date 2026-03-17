@@ -7,5 +7,7 @@ public record UpdateProductRequest(
         @NotBlank(message = "SAM account name cannot be blank")
         String samAccountName,
 
-        @NotBlank(message = "Appointment cannot be blank") String appointment,
+        @NotBlank(message = "Appointment title cannot be blank")
+        String appointmentTitle,
+
         List<String> emailAddresses) {}

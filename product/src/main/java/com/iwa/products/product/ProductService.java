@@ -16,7 +16,9 @@ class ProductService {
     private static final Logger log = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository repository;
+
     private final RabbitTemplate rabbitTemplate;
+
     private final String exchange;
 
     ProductService(
@@ -37,7 +39,7 @@ class ProductService {
 
     Product update(ObjectId id, Product product) {
         repository.findById(id).orElseThrow(() -> new ProductNotFoundException(id.toString()));
-        Product updated = new Product(id, product.samAccountName(), product.appointment(), product.emailAddresses());
+        Product updated = new Product(id, product.samAccountName(), product.emailAddresses(), product.appointment());
         Product saved = repository.save(updated);
         log.info("product_updated id={}", saved.id());
         publishEvent(saved.id().toString(), saved, ProductEvent.EventType.UPDATED);
@@ -65,7 +67,11 @@ class ProductService {
 
     private void publishEvent(String productId, Product product, ProductEvent.EventType eventType) {
         ProductEvent event = new ProductEvent(
-                productId, product.samAccountName(), product.appointment(), product.emailAddresses(), eventType);
+                productId,
+                product.samAccountName(),
+                product.appointment().title(),
+                product.emailAddresses(),
+                eventType);
         String routingKey = "product." + eventType.name().toLowerCase();
         rabbitTemplate.convertAndSend(exchange, routingKey, event);
         log.info("event_published productId={} eventType={}", productId, eventType);
