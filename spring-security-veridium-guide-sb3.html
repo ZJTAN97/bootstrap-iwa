@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spring Security + Veridium Integration Guide</title>
+<title>Spring Security + Veridium Integration Guide (Spring Boot 3.5)</title>
 <style>
   :root {
     --bg: #0f1117;
@@ -114,15 +114,14 @@
     padding: 0;
     color: var(--text);
   }
-  /* Syntax colors */
-  .kw { color: #c792ea; }   /* keywords */
-  .ty { color: #82aaff; }   /* types/classes */
-  .fn { color: #82cfff; }   /* functions */
-  .str { color: #c3e88d; }  /* strings */
-  .cm { color: #546e7a; }   /* comments */
-  .an { color: #ffcb6b; }   /* annotations */
-  .nu { color: #f78c6c; }   /* numbers */
-  .op { color: #89ddff; }   /* operators */
+  .kw { color: #c792ea; }
+  .ty { color: #82aaff; }
+  .fn { color: #82cfff; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; }
+  .an { color: #ffcb6b; }
+  .nu { color: #f78c6c; }
+  .op { color: #89ddff; }
 
   .callout {
     border-radius: 8px;
@@ -273,7 +272,6 @@
   .hamburger.open span:nth-child(2) { opacity: 0; }
   .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  /* Overlay behind open sidebar on mobile */
   .sidebar-overlay {
     display: none;
     position: fixed;
@@ -286,7 +284,6 @@
   /* ===== RESPONSIVE ===== */
   @media (max-width: 768px) {
     .topbar { display: flex; }
-
     .sidebar {
       top: 0;
       left: -280px;
@@ -296,33 +293,22 @@
       padding-top: 60px;
     }
     .sidebar.open { left: 0; }
-    /* Hide desktop logo inside sidebar on mobile (topbar has its own) */
     .sidebar .logo { display: none; }
-
     main {
       margin-left: 0;
       padding: 72px 16px 32px;
     }
-
     h1 { font-size: 1.5rem; }
     h2 { font-size: 1.2rem; margin: 36px 0 12px; scroll-margin-top: 60px; }
     h3 { scroll-margin-top: 60px; }
-
     .hero { padding: 20px 16px; }
     .hero .subtitle { font-size: 0.95rem; }
     .hero .meta { flex-wrap: wrap; gap: 10px; }
-
-    /* Tables: horizontal scroll */
     table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    /* Diagrams: smaller font, still scroll */
     .diagram { font-size: 10.5px; padding: 14px; }
-
     pre { padding: 14px; font-size: 12px; }
-
     .flow-item { font-size: 12px; padding: 8px 12px; }
     .flow-item .desc { font-size: 11px; }
-
     .callout { padding: 12px 14px; }
   }
 
@@ -340,12 +326,12 @@
   <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
     <span></span><span></span><span></span>
   </button>
-  <div class="logo">Spring Security <span>×</span> Veridium</div>
+  <div class="logo">Spring Security <span>×</span> Veridium <span style="color:var(--muted);font-weight:400">SB3</span></div>
 </div>
 <div class="sidebar-overlay" id="overlay"></div>
 
 <nav class="sidebar" id="sidebar">
-  <div class="logo">Spring Security <span>×</span> Veridium</div>
+  <div class="logo">Spring Security <span>×</span> Veridium <span style="color:var(--muted);font-weight:400;font-size:12px">SB3</span></div>
   <h3>Fundamentals</h3>
   <a href="#architecture">Architecture Overview</a>
   <a href="#filter-chain">SecurityFilterChain</a>
@@ -355,7 +341,7 @@
   <a href="#authorities">GrantedAuthority</a>
   <a href="#security-context">SecurityContext</a>
   <h3>Pre-Authentication</h3>
-  <a href="#preauth-overview">Overview & When to Use</a>
+  <a href="#preauth-overview">Overview &amp; When to Use</a>
   <a href="#preauth-filter">AbstractPreAuthenticatedProcessingFilter</a>
   <a href="#preauth-provider">PreAuthenticatedAuthenticationProvider</a>
   <a href="#preauth-userdetails">AuthenticationUserDetailsService</a>
@@ -377,6 +363,7 @@
   <a href="#poc-controller">6. Protected Controller</a>
   <a href="#poc-test">7. Testing It</a>
   <h3>Reference</h3>
+  <a href="#vs-sb4">Differences vs Spring Boot 4.x</a>
   <a href="#security-hardening">Security Hardening</a>
   <a href="#cheatsheet">Quick Cheatsheet</a>
 </nav>
@@ -386,20 +373,25 @@
 <!-- ===== HERO ===== -->
 <div class="hero">
   <h1>Spring Security × Veridium</h1>
-  <p class="subtitle">Pre-authentication integration guide — from first principles to working PoC on the product module</p>
+  <p class="subtitle">Pre-authentication integration guide — Spring Boot 3.5 edition</p>
   <div class="meta">
-    <div class="meta-item"><strong>Spring Boot</strong> 4.0.3</div>
-    <div class="meta-item"><strong>Spring Security</strong> 7.x</div>
-    <div class="meta-item"><strong>Java</strong> 25</div>
+    <div class="meta-item"><strong>Spring Boot</strong> 3.5.x</div>
+    <div class="meta-item"><strong>Spring Security</strong> 6.5.x</div>
+    <div class="meta-item"><strong>Java</strong> 17+</div>
     <div class="meta-item"><strong>Pattern</strong> Pre-Authentication via HTTP Headers</div>
     <div class="meta-item"><strong>Module</strong> product</div>
   </div>
 </div>
 
+<div class="callout info">
+  <div class="callout-title">Spring Boot 3.5 vs 4.x</div>
+  This guide targets <strong>Spring Boot 3.5.x / Spring Security 6.5.x / Java 17+</strong> — the current LTS-aligned line as of mid-2026. If you are on Spring Boot 4.x (Spring Security 7.x, Java 25), the pre-authentication APIs are essentially identical; see the <a href="#vs-sb4">differences section</a> at the end for what actually changed.
+</div>
+
 <!-- ===== SECTION 1: ARCHITECTURE ===== -->
 <h2 id="architecture"><span class="section-num">1</span> Architecture Overview</h2>
 
-<p>Spring Security sits entirely in the <strong>Servlet Filter chain</strong> — every HTTP request passes through a series of security filters before reaching your controller. The filters run in a defined order and each can either continue the chain, short-circuit with an error, or modify the security context.</p>
+<p>Spring Security sits entirely in the <strong>Servlet Filter chain</strong> — every HTTP request passes through a series of security filters before reaching your controller. The filters run in a defined order; each can continue the chain, short-circuit with an error, or modify the security context.</p>
 
 <div class="diagram"><span class="hi">HTTP Request</span>
        │
@@ -423,16 +415,16 @@
        ▼
   <span class="hi3">DispatcherServlet → Controller</span></div>
 
-<p>The key insight: Spring Security is <em>filter-based</em>. You integrate by inserting the right filter at the right position in the chain. For pre-authentication, your custom filter runs <strong>before</strong> <code>UsernamePasswordAuthenticationFilter</code>.</p>
+<p>Spring Security is <em>filter-based</em>. You integrate by inserting the right filter at the right position in the chain. For pre-authentication, your custom filter runs <strong>before</strong> <code>UsernamePasswordAuthenticationFilter</code>.</p>
 
 <!-- ===== SECTION 2: FILTER CHAIN ===== -->
 <h2 id="filter-chain"><span class="section-num">2</span> SecurityFilterChain</h2>
 
-<p>A <code>SecurityFilterChain</code> is a bean that maps URL patterns to a chain of security filters. You configure it using the <code>HttpSecurity</code> DSL inside a <code>@Configuration</code> class. Spring Security 6+ (and 7.x) <strong>removed <code>WebSecurityConfigurerAdapter</code></strong> — you declare <code>@Bean</code> methods returning <code>SecurityFilterChain</code> instead.</p>
+<p>A <code>SecurityFilterChain</code> is a bean that maps URL patterns to a chain of security filters. You configure it using the <code>HttpSecurity</code> DSL inside a <code>@Configuration</code> class. Spring Security 6.x <strong>removed <code>WebSecurityConfigurerAdapter</code></strong> (deprecated since 5.7, removed in 6.0) — declare <code>@Bean</code> methods returning <code>SecurityFilterChain</code> instead.</p>
 
 <pre><code><span class="an">@Configuration</span>
 <span class="an">@EnableWebSecurity</span>
-<span class="an">@EnableMethodSecurity</span>  <span class="cm">// enables @PreAuthorize on methods</span>
+<span class="an">@EnableMethodSecurity</span>  <span class="cm">// enables @PreAuthorize on methods (replaces @EnableGlobalMethodSecurity)</span>
 <span class="kw">public class</span> <span class="ty">SecurityConfig</span> {
 
     <span class="an">@Bean</span>
@@ -453,13 +445,14 @@
 }</code></pre>
 
 <div class="callout info">
-  <div class="callout-title">Key API changes from Spring Security 5.x → 6.x/7.x</div>
+  <div class="callout-title">Key API changes from Spring Security 5.x → 6.x</div>
   <ul>
     <li><code>authorizeRequests()</code> → <code>authorizeHttpRequests()</code></li>
     <li><code>antMatchers()</code> → <code>requestMatchers()</code></li>
     <li><code>WebSecurityConfigurerAdapter</code> removed — use <code>@Bean SecurityFilterChain</code></li>
     <li><code>csrf().disable()</code> → <code>csrf(AbstractHttpConfigurer::disable)</code></li>
     <li><code>@EnableGlobalMethodSecurity(prePostEnabled=true)</code> → <code>@EnableMethodSecurity</code></li>
+    <li>Lambda DSL is now <strong>required</strong> for all configurers — old method-reference style removed</li>
   </ul>
 </div>
 
@@ -543,7 +536,7 @@
   <tr><td><code>AuthenticationUserDetailsService&lt;T&gt;</code></td><td>Full <code>Authentication</code> token</td><td><code>PreAuthenticatedAuthenticationProvider</code></td></tr>
 </table>
 
-<p>For pre-auth, use <code>AuthenticationUserDetailsService&lt;PreAuthenticatedAuthenticationToken&gt;</code> — it gives you access to the full token including the <code>details</code> object where you can store header-derived data.</p>
+<p>For pre-auth, use <code>AuthenticationUserDetailsService&lt;PreAuthenticatedAuthenticationToken&gt;</code> — it gives you access to the full token including the <code>details</code> object where you stored header-derived data.</p>
 
 <!-- ===== SECTION 6: AUTHORITIES ===== -->
 <h2 id="authorities"><span class="section-num">6</span> GrantedAuthority</h2>
@@ -569,7 +562,7 @@
 <!-- ===== SECTION 7: SECURITY CONTEXT ===== -->
 <h2 id="security-context"><span class="section-num">7</span> SecurityContext &amp; SecurityContextHolder</h2>
 
-<p>The <code>SecurityContext</code> holds the current <code>Authentication</code> object for the duration of a request. <code>SecurityContextHolder</code> is the static accessor — by default it's thread-local, so each request thread has its own context.</p>
+<p>The <code>SecurityContext</code> holds the current <code>Authentication</code> object for the duration of a request. <code>SecurityContextHolder</code> is the static accessor — by default thread-local, so each request thread has its own context.</p>
 
 <pre><code><span class="cm">// Reading current auth in any bean</span>
 <span class="ty">Authentication</span> auth = <span class="ty">SecurityContextHolder</span>.getContext().<span class="fn">getAuthentication</span>();
@@ -585,7 +578,7 @@
 <span class="ty">SecurityContext</span> ctx = <span class="ty">SecurityContextHolder</span>.<span class="fn">createEmptyContext</span>();
 ctx.<span class="fn">setAuthentication</span>(authentication);
 <span class="ty">SecurityContextHolder</span>.<span class="fn">setContext</span>(ctx);
-<span class="cm">// → Always clear after setting in tests or manual flows</span>
+<span class="cm">// Always clear after setting manually in tests</span>
 <span class="ty">SecurityContextHolder</span>.<span class="fn">clearContext</span>();</code></pre>
 
 <div class="callout warn">
@@ -617,13 +610,13 @@ ctx.<span class="fn">setAuthentication</span>(authentication);
 
 <div class="callout success">
   <div class="callout-title">Your scenario: IWA with Veridium</div>
-  The product module has <code>samAccountName</code> as its user identifier — this is an Active Directory attribute. Veridium performs biometric authentication, verifies the AD identity, and (via WAF/proxy) injects the samAccountName into a trusted HTTP header. Spring Security's pre-auth filter picks this up.
+  The product module has <code>samAccountName</code> as its user identifier — an Active Directory attribute. Veridium performs biometric authentication, verifies the AD identity, and (via WAF/proxy) injects the samAccountName into a trusted HTTP header. Spring Security's pre-auth filter picks this up.
 </div>
 
 <!-- ===== PREAUTH FILTER ===== -->
 <h2 id="preauth-filter"><span class="section-num">9</span> AbstractPreAuthenticatedProcessingFilter</h2>
 
-<p>This is the base class you extend to create a pre-auth filter. It lives in <code>org.springframework.security.web.authentication.preauth</code>.</p>
+<p>This is the base class you extend to create a pre-auth filter. It lives in <code>org.springframework.security.web.authentication.preauth</code>. <strong>The API is identical in Spring Security 6.x and 7.x.</strong></p>
 
 <h3>How it works</h3>
 <div class="flow-box">
@@ -631,7 +624,7 @@ ctx.<span class="fn">setAuthentication</span>(authentication);
   <div class="flow-sep">↓</div>
   <div class="flow-item"><span class="arrow">2.</span> Calls <code>getPreAuthenticatedPrincipal(request)</code> — your implementation<div class="desc">Return the username/identity extracted from the request. Return null if not present.</div></div>
   <div class="flow-sep">↓</div>
-  <div class="flow-item"><span class="arrow">3.</span> If principal is null → no pre-auth present. If <code>exceptionIfHeaderMissing=true</code> throws; otherwise continues chain unauthenticated.<div class="desc"></div></div>
+  <div class="flow-item"><span class="arrow">3.</span> If principal is null → no pre-auth present. If <code>exceptionIfHeaderMissing=true</code> throws; otherwise continues chain unauthenticated.</div>
   <div class="flow-sep">↓</div>
   <div class="flow-item"><span class="arrow">4.</span> Calls <code>getPreAuthenticatedCredentials(request)</code> — your implementation<div class="desc">Usually returns "N/A" — credentials not meaningful when external system authenticated.</div></div>
   <div class="flow-sep">↓</div>
@@ -649,24 +642,23 @@ ctx.<span class="fn">setAuthentication</span>(authentication);
 
     <span class="an">@Override</span>
     <span class="kw">protected</span> <span class="ty">Object</span> <span class="fn">getPreAuthenticatedPrincipal</span>(<span class="ty">HttpServletRequest</span> request) {
-        <span class="cm">// Extract identity from request. Return null → no pre-auth → continue unauthenticated.</span>
+        <span class="cm">// Return null → no pre-auth → continue unauthenticated</span>
         <span class="kw">return</span> request.<span class="fn">getHeader</span>(<span class="str">"X-Authenticated-User"</span>);
     }
 
     <span class="an">@Override</span>
     <span class="kw">protected</span> <span class="ty">Object</span> <span class="fn">getPreAuthenticatedCredentials</span>(<span class="ty">HttpServletRequest</span> request) {
-        <span class="cm">// Not meaningful for pre-auth — external system already authenticated</span>
         <span class="kw">return</span> <span class="str">"N/A"</span>;
     }
 }</code></pre>
 
 <h3>Built-in subclass: RequestHeaderAuthenticationFilter</h3>
-<p>Spring provides <code>RequestHeaderAuthenticationFilter</code> as a ready-to-use implementation that reads a configurable header. Configured by <code>setPrincipalRequestHeader(String)</code>. Use this when you have no need for custom logic beyond reading a single header.</p>
+<p>Spring provides <code>RequestHeaderAuthenticationFilter</code> as a ready-to-use implementation that reads a configurable header. Use it when you need no custom logic beyond reading a single header.</p>
 
 <pre><code><span class="ty">RequestHeaderAuthenticationFilter</span> filter = <span class="kw">new</span> <span class="ty">RequestHeaderAuthenticationFilter</span>();
 filter.<span class="fn">setPrincipalRequestHeader</span>(<span class="str">"X-Authenticated-User"</span>);
 filter.<span class="fn">setCredentialsRequestHeader</span>(<span class="str">"X-Auth-Token"</span>);  <span class="cm">// optional</span>
-filter.<span class="fn">setExceptionIfHeaderMissing</span>(<span class="kw">false</span>);  <span class="cm">// don't throw if header absent</span>
+filter.<span class="fn">setExceptionIfHeaderMissing</span>(<span class="kw">false</span>);
 filter.<span class="fn">setAuthenticationManager</span>(<span class="fn">authenticationManager</span>());</code></pre>
 
 <!-- ===== PREAUTH PROVIDER ===== -->
@@ -684,7 +676,7 @@ provider.<span class="fn">setPreAuthenticatedUserDetailsService</span>(myVeridiu
 provider.<span class="fn">setPreAuthenticatedUserDetailsService</span>(
     <span class="kw">new</span> <span class="ty">UserDetailsByNameServiceWrapper</span>&lt;&gt;(myUserDetailsService));
 
-<span class="cm">// Option C: use authorities from the GrantedAuthoritiesContainer in token.details</span>
+<span class="cm">// Option C: read authorities from GrantedAuthoritiesContainer in token.details</span>
 provider.<span class="fn">setPreAuthenticatedUserDetailsService</span>(
     <span class="kw">new</span> <span class="ty">PreAuthenticatedGrantedAuthoritiesUserDetailsService</span>());</code></pre>
 
@@ -716,14 +708,17 @@ provider.<span class="fn">setPreAuthenticatedUserDetailsService</span>(
     }
 }</code></pre>
 
-<p>The advantage of <code>AuthenticationUserDetailsService</code> over plain <code>UserDetailsService</code>: you have access to the full token including its <code>details</code> object, which can carry roles extracted from HTTP headers.</p>
-
 <!-- ===== AUTHORITIES FROM HEADERS ===== -->
 <h2 id="preauth-authorities"><span class="section-num">12</span> Authorities from HTTP Headers (GrantedAuthoritiesContainer)</h2>
 
 <p>When the upstream proxy sets both the username and role headers, you can skip the database lookup entirely by carrying roles in the token's <code>details</code> object.</p>
 
 <p><strong>Pattern:</strong> Override <code>buildDetails(request)</code> in your filter to return a custom object implementing <code>GrantedAuthoritiesContainer</code>. Then use <code>PreAuthenticatedGrantedAuthoritiesUserDetailsService</code> as the provider's UDS — it reads authorities directly from the container.</p>
+
+<div class="callout info">
+  <div class="callout-title">Spring Security 6.x: GrantedAuthoritiesContainer</div>
+  In Spring Security 6.x, <code>GrantedAuthoritiesContainer</code> is the interface to implement. A concrete class <code>PreAuthenticatedGrantedAuthoritiesWebAuthenticationDetails</code> also exists (extends <code>WebAuthenticationDetails</code> + implements <code>GrantedAuthoritiesContainer</code>) but you should implement the interface directly for clarity and to avoid coupling to a specific hierarchy.
+</div>
 
 <pre><code><span class="cm">// 1. Implement GrantedAuthoritiesContainer on your details object</span>
 <span class="kw">class</span> <span class="ty">VeridiumAuthDetails</span> <span class="kw">extends</span> <span class="ty">WebAuthenticationDetails</span>
@@ -734,12 +729,12 @@ provider.<span class="fn">setPreAuthenticatedUserDetailsService</span>(
     <span class="ty">VeridiumAuthDetails</span>(<span class="ty">HttpServletRequest</span> request) {
         <span class="kw">super</span>(request);
         <span class="ty">String</span> rolesHeader = request.<span class="fn">getHeader</span>(<span class="str">"X-User-Roles"</span>);
-        <span class="kw">this</span>.authorities = rolesHeader != <span class="kw">null</span>
+        <span class="kw">this</span>.authorities = rolesHeader != <span class="kw">null</span> &amp;&amp; !rolesHeader.<span class="fn">isBlank</span>()
             ? <span class="ty">Arrays</span>.<span class="fn">stream</span>(rolesHeader.<span class="fn">split</span>(<span class="str">","</span>))
                 .<span class="fn">map</span>(<span class="ty">String</span>::trim)
                 .<span class="fn">filter</span>(s -&gt; !s.<span class="fn">isBlank</span>())
-                .<span class="fn">map</span>(r -&gt; <span class="kw">new</span> <span class="ty">SimpleGrantedAuthority</span>(<span class="str">"ROLE_"</span> + r.<span class="fn">toUpperCase</span>()))
-                .&lt;<span class="ty">GrantedAuthority</span>&gt;<span class="fn">toList</span>()
+                .<span class="fn">map</span>(r -&gt; (<span class="ty">GrantedAuthority</span>) <span class="kw">new</span> <span class="ty">SimpleGrantedAuthority</span>(<span class="str">"ROLE_"</span> + r.<span class="fn">toUpperCase</span>()))
+                .<span class="fn">toList</span>()
             : <span class="ty">List</span>.<span class="fn">of</span>(<span class="kw">new</span> <span class="ty">SimpleGrantedAuthority</span>(<span class="str">"ROLE_USER"</span>));
     }
 
@@ -816,9 +811,9 @@ provider.<span class="fn">setPreAuthenticatedUserDetailsService</span>(
 
 <!-- ===== PATTERN A: SAML ===== -->
 <h2 id="pattern-saml"><span class="section-num">15</span> Pattern A: SAML 2.0 (Browser SSO)</h2>
-<p><span class="tag">Use when</span> Veridium is your enterprise SSO IdP for browser-based web apps. Users see a Veridium login page, authenticate biometrically, then get redirected back to your app with a SAML assertion.</p>
+<p><span class="tag">Use when</span> Veridium is your enterprise SSO IdP for browser-based web apps. Users see a Veridium login page, authenticate biometrically, then get redirected back with a SAML assertion.</p>
 
-<pre><code><span class="cm">// pom.xml</span>
+<pre><code><span class="cm">&lt;!-- product/pom.xml --&gt;</span>
 &lt;dependency&gt;
     &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
     &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
@@ -864,8 +859,14 @@ spring:
 
 <div class="callout warn">
   <div class="callout-title">Veridium JWT quirk: <code>at+jwt</code> token type</div>
-  Veridium OIDC issues tokens with type <code>at+jwt</code>. Spring Security's default JWT decoder rejects non-standard types. You must customize the JWS type verifier.
+  Veridium OIDC issues tokens with type <code>at+jwt</code>. Spring Security's default JWT decoder rejects non-standard types. You must customize the JWS type verifier — same in both 6.x and 7.x.
 </div>
+
+<pre><code><span class="cm">&lt;!-- add to pom.xml alongside spring-boot-starter-security --&gt;</span>
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-oauth2-resource-server&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
 
 <pre><code><span class="an">@Bean</span>
 <span class="kw">public</span> <span class="ty">JwtDecoder</span> <span class="fn">veridiumJwtDecoder</span>() {
@@ -874,7 +875,7 @@ spring:
         .<span class="fn">jwtProcessorCustomizer</span>(processor -&gt; {
             processor.<span class="fn">setJWSTypeVerifier</span>(
                 <span class="kw">new</span> <span class="ty">DefaultJOSEObjectTypeVerifier</span>&lt;&gt;(
-                    <span class="kw">new</span> <span class="ty">JOSEObjectType</span>(<span class="str">"at+jwt"</span>),  <span class="cm">// Veridium's type</span>
+                    <span class="kw">new</span> <span class="ty">JOSEObjectType</span>(<span class="str">"at+jwt"</span>),
                     <span class="ty">JOSEObjectType</span>.JWT,
                     <span class="kw">null</span>
                 )
@@ -887,7 +888,7 @@ spring:
 <span class="an">@Bean</span>
 <span class="kw">public</span> <span class="ty">JwtAuthenticationConverter</span> <span class="fn">jwtConverter</span>() {
     <span class="ty">JwtGrantedAuthoritiesConverter</span> grantedAuthConverter = <span class="kw">new</span> <span class="ty">JwtGrantedAuthoritiesConverter</span>();
-    grantedAuthConverter.<span class="fn">setAuthoritiesClaimName</span>(<span class="str">"groups"</span>);  <span class="cm">// your Veridium claim name</span>
+    grantedAuthConverter.<span class="fn">setAuthoritiesClaimName</span>(<span class="str">"groups"</span>);
     grantedAuthConverter.<span class="fn">setAuthorityPrefix</span>(<span class="str">"ROLE_"</span>);
     <span class="ty">JwtAuthenticationConverter</span> converter = <span class="kw">new</span> <span class="ty">JwtAuthenticationConverter</span>();
     converter.<span class="fn">setJwtGrantedAuthoritiesConverter</span>(grantedAuthConverter);
@@ -933,7 +934,6 @@ spring:
 <span class="cm">// Once user authenticates biometrically, GetSessionStatus returns:</span>
 <span class="cm">// { "status": "AUTHENTICATED", "identityToken": "&lt;server-signed-jwt&gt;", "subject": "jsmith" }</span>
 
-<span class="cm">// Your filter validates and unpacks the identityToken:</span>
 <span class="kw">class</span> <span class="ty">VeridiumIdentityTokenFilter</span> <span class="kw">extends</span> <span class="ty">OncePerRequestFilter</span> {
     <span class="an">@Override</span>
     <span class="kw">protected void</span> <span class="fn">doFilterInternal</span>(<span class="ty">HttpServletRequest</span> req, ...) {
@@ -949,7 +949,7 @@ spring:
 <!-- ===== POC SECTION ===== -->
 <h2 id="poc-overview"><span class="section-num">19</span> PoC Architecture — Product Module</h2>
 
-<p>The PoC implements <strong>Pattern C</strong> (header pre-authentication) on the product module. It demonstrates the full pre-authentication flow with Veridium-style headers, with method-level security on individual endpoints.</p>
+<p>The PoC implements <strong>Pattern C</strong> (header pre-authentication) on the product module. It demonstrates the full pre-authentication flow with Veridium-style headers and method-level security on individual endpoints.</p>
 
 <div class="diagram">product module — security layer added:
 
@@ -973,9 +973,16 @@ com.iwa.products/
 <!-- ===== POC: DEPS ===== -->
 <h2 id="poc-deps"><span class="section-num">20</span> Step 1 — Add Dependencies</h2>
 
-<p>Add <code>spring-boot-starter-security</code> to <code>product/pom.xml</code>. The version is managed by the Spring Boot parent BOM.</p>
+<p>Declare the Spring Boot parent at <strong>3.5.x</strong> and add <code>spring-boot-starter-security</code>. No explicit Spring Security version is needed — the BOM provides 6.5.x.</p>
 
-<pre><code><span class="cm">&lt;!-- product/pom.xml — add inside &lt;dependencies&gt; --&gt;</span>
+<pre><code><span class="cm">&lt;!-- parent pom or root pom.xml --&gt;</span>
+&lt;parent&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+    &lt;version&gt;3.5.3&lt;/version&gt;
+&lt;/parent&gt;
+
+<span class="cm">&lt;!-- product/pom.xml — add inside &lt;dependencies&gt; --&gt;</span>
 &lt;dependency&gt;
     &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
     &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
@@ -983,13 +990,13 @@ com.iwa.products/
 
 <div class="callout info">
   <div class="callout-title">What this pulls in</div>
-  <code>spring-security-core</code>, <code>spring-security-config</code>, <code>spring-security-web</code>. No explicit version needed — parent BOM provides Spring Security 7.x compatible with Spring Boot 4.0.3.
+  <code>spring-security-core</code>, <code>spring-security-config</code>, <code>spring-security-web</code> — all at <strong>6.5.x</strong>. No explicit version needed; the Spring Boot 3.5 BOM manages it. Minimum Java version is <strong>17</strong>.
 </div>
 
 <!-- ===== POC: FILTER ===== -->
 <h2 id="poc-filter"><span class="section-num">21</span> Step 2 — VeridiumPreAuthFilter</h2>
 
-<p>This filter reads the pre-authenticated identity from the <code>X-Authenticated-User</code> header.</p>
+<p>This filter reads the pre-authenticated identity from the <code>X-Authenticated-User</code> header. The import is <code>jakarta.servlet</code> (Jakarta EE 10) — Spring Boot 3.x migrated from <code>javax.servlet</code> in 2.x.</p>
 
 <pre><code><span class="kw">package</span> com.iwa.products.security;
 
@@ -1023,20 +1030,25 @@ com.iwa.products/
 
 <p>Carries the roles from the <code>X-User-Roles</code> header. Implements <code>GrantedAuthoritiesContainer</code> so the provider can extract them without a DB call.</p>
 
+<div class="callout info">
+  <div class="callout-title">Spring Security 6.x import</div>
+  <code>GrantedAuthoritiesContainer</code> is in <code>org.springframework.security.web.authentication.preauth</code>. This is the same package in both 6.x and 7.x.
+</div>
+
 <pre><code><span class="kw">package</span> com.iwa.products.security;
 
 <span class="kw">import</span> jakarta.servlet.http.HttpServletRequest;
 <span class="kw">import</span> org.springframework.security.core.GrantedAuthority;
 <span class="kw">import</span> org.springframework.security.core.authority.SimpleGrantedAuthority;
 <span class="kw">import</span> org.springframework.security.web.authentication.WebAuthenticationDetails;
-<span class="kw">import</span> org.springframework.security.web.authentication.preauth.PreAuthenticatedGrantedAuthoritiesWebAuthenticationDetails;
+<span class="kw">import</span> org.springframework.security.web.authentication.preauth.GrantedAuthoritiesContainer;
 
 <span class="kw">import</span> java.util.Arrays;
 <span class="kw">import</span> java.util.Collection;
 <span class="kw">import</span> java.util.List;
 
 <span class="kw">class</span> <span class="ty">VeridiumAuthDetails</span> <span class="kw">extends</span> <span class="ty">WebAuthenticationDetails</span>
-        <span class="kw">implements</span> org.springframework.security.web.authentication.preauth.<span class="ty">PreAuthenticatedGrantedAuthoritiesWebAuthenticationDetails</span> {
+        <span class="kw">implements</span> <span class="ty">GrantedAuthoritiesContainer</span> {
 
     <span class="kw">static final</span> <span class="ty">String</span> ROLES_HEADER = <span class="str">"X-User-Roles"</span>;
 
@@ -1074,6 +1086,8 @@ com.iwa.products/
 <span class="kw">import</span> org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 <span class="kw">import</span> org.springframework.stereotype.Service;
 
+<span class="kw">import</span> java.util.List;
+
 <span class="an">@Service</span>
 <span class="kw">class</span> <span class="ty">VeridiumUserDetailsService</span>
         <span class="kw">implements</span> <span class="ty">AuthenticationUserDetailsService</span>&lt;<span class="ty">PreAuthenticatedAuthenticationToken</span>&gt; {
@@ -1089,7 +1103,7 @@ com.iwa.products/
 
         <span class="kw">var</span> authorities = token.<span class="fn">getDetails</span>() <span class="kw">instanceof</span> <span class="ty">VeridiumAuthDetails</span> details
             ? details.<span class="fn">getGrantedAuthorities</span>()
-            : <span class="ty">java.util.List</span>.<span class="fn">of</span>();
+            : <span class="ty">List</span>.<span class="fn">of</span>();
 
         <span class="kw">return</span> <span class="ty">User</span>.<span class="fn">withUsername</span>(samAccountName)
             .<span class="fn">password</span>(<span class="str">""</span>)
@@ -1224,6 +1238,12 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
   -H "X-User-Roles: USER"</code></pre>
 
 <h3>Integration test with Spring Security Test</h3>
+
+<div class="callout info">
+  <div class="callout-title">spring-security-test in Spring Boot 3.5</div>
+  Add <code>spring-boot-starter-test</code> — it includes <code>spring-security-test</code> automatically via the test BOM. No explicit version needed.
+</div>
+
 <pre><code><span class="kw">import</span> org.springframework.security.test.context.support.WithMockUser;
 <span class="kw">import static</span> org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
@@ -1266,8 +1286,67 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
 
 <hr>
 
+<!-- ===== VS SB4 ===== -->
+<h2 id="vs-sb4"><span class="section-num">27</span> Differences vs Spring Boot 4.x / Spring Security 7.x</h2>
+
+<p>If you later migrate to Spring Boot 4.x, the pre-authentication code in this guide requires <strong>no changes</strong> to the security logic. The differences are environmental:</p>
+
+<table>
+  <tr><th>Area</th><th>Spring Boot 3.5 / SS 6.5</th><th>Spring Boot 4.x / SS 7.x</th></tr>
+  <tr>
+    <td>Java baseline</td>
+    <td>Java 17+</td>
+    <td>Java 25+ (virtual threads on by default)</td>
+  </tr>
+  <tr>
+    <td>Servlet namespace</td>
+    <td><code>jakarta.servlet</code> (Jakarta EE 10)</td>
+    <td><code>jakarta.servlet</code> (Jakarta EE 11) — same imports</td>
+  </tr>
+  <tr>
+    <td>Pre-auth filter API</td>
+    <td><code>AbstractPreAuthenticatedProcessingFilter</code> — unchanged</td>
+    <td>Unchanged</td>
+  </tr>
+  <tr>
+    <td>HttpSecurity DSL</td>
+    <td>Lambda DSL required since 6.1</td>
+    <td>Unchanged — same lambda DSL</td>
+  </tr>
+  <tr>
+    <td><code>@EnableMethodSecurity</code></td>
+    <td>Available since SS 6.0</td>
+    <td>Unchanged</td>
+  </tr>
+  <tr>
+    <td>Deprecated APIs removed in SS 7</td>
+    <td>Still present (e.g. some <code>authorizeRequests()</code> overloads, <code>WebSecurityConfigurerAdapter</code> already gone since 6.0)</td>
+    <td>Several previously-deprecated methods hard-removed — check release notes</td>
+  </tr>
+  <tr>
+    <td>Spring Framework</td>
+    <td>Spring 6.2.x</td>
+    <td>Spring 7.x</td>
+  </tr>
+  <tr>
+    <td>BOM / parent version</td>
+    <td><code>spring-boot-starter-parent:3.5.x</code></td>
+    <td><code>spring-boot-starter-parent:4.0.x</code></td>
+  </tr>
+</table>
+
+<div class="callout success">
+  <div class="callout-title">Migration path</div>
+  The code in this guide compiles and runs identically on Spring Boot 4.x. The only migration action is updating the parent POM version and adjusting the Java toolchain from 17 to 25 in your build. No Spring Security API changes needed for the pre-auth pattern.
+</div>
+
+<h3>One behavioral difference: security context propagation with virtual threads</h3>
+<p>Spring Boot 4.x enables virtual threads (Project Loom) by default. The security context is still thread-local by default, but virtual threads are cheap enough that the <code>DelegatingSecurityContextRunnable</code> / <code>DelegatingSecurityContextExecutor</code> wrappers become even more important if you use <code>@Async</code>. In Spring Boot 3.5 you can opt in to virtual threads via <code>spring.threads.virtual.enabled=true</code> and should apply the same wrappers.</p>
+
+<hr>
+
 <!-- ===== SECURITY HARDENING ===== -->
-<h2 id="security-hardening"><span class="section-num">27</span> Security Hardening for Header Pre-Auth</h2>
+<h2 id="security-hardening"><span class="section-num">28</span> Security Hardening for Header Pre-Auth</h2>
 
 <div class="callout danger">
   <div class="callout-title">Critical: Spring Security does NOT validate header authenticity</div>
@@ -1280,7 +1359,6 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
   <li><strong>Proxy secret header:</strong> Add a shared secret header (<code>X-Proxy-Secret</code>) that the WAF sets. Validate it in a filter that runs <em>before</em> <code>VeridiumPreAuthFilter</code>. Reject if missing or wrong.</li>
   <li><strong>Header stripping:</strong> The WAF/proxy must strip any client-provided <code>X-Authenticated-User</code> and <code>X-User-Roles</code> headers before adding its own. Configure this in NGINX/F5/Netscaler.</li>
   <li><strong>mTLS between proxy and service:</strong> Require client certificate from the proxy. Validate it at the Spring Boot layer using the servlet container's SSL config.</li>
-  <li><strong>Immutable headers validation filter:</strong></li>
 </ul>
 
 <pre><code><span class="kw">class</span> <span class="ty">ProxySecretValidationFilter</span> <span class="kw">extends</span> <span class="ty">OncePerRequestFilter</span> {
@@ -1306,7 +1384,7 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
 <hr>
 
 <!-- ===== CHEATSHEET ===== -->
-<h2 id="cheatsheet"><span class="section-num">28</span> Quick Cheatsheet</h2>
+<h2 id="cheatsheet"><span class="section-num">29</span> Quick Cheatsheet</h2>
 
 <table>
   <tr><th>Concept</th><th>Class/Interface</th><th>Package</th></tr>
@@ -1319,8 +1397,8 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
   <tr><td>Pre-auth token</td><td><code>PreAuthenticatedAuthenticationToken</code></td><td><code>o.s.s.web.authentication.preauth</code></td></tr>
   <tr><td>Load user for pre-auth</td><td><code>AuthenticationUserDetailsService&lt;T&gt;</code></td><td><code>o.s.s.core.userdetails</code></td></tr>
   <tr><td>Load user by name</td><td><code>UserDetailsByNameServiceWrapper</code></td><td><code>o.s.s.core.userdetails</code></td></tr>
-  <tr><td>Authorities from headers</td><td><code>PreAuthenticatedGrantedAuthoritiesUserDetailsService</code></td><td><code>o.s.s.web.authentication.preauth</code></td></tr>
   <tr><td>Carry authorities in details</td><td><code>GrantedAuthoritiesContainer</code></td><td><code>o.s.s.web.authentication.preauth</code></td></tr>
+  <tr><td>Authorities from container</td><td><code>PreAuthenticatedGrantedAuthoritiesUserDetailsService</code></td><td><code>o.s.s.web.authentication.preauth</code></td></tr>
   <tr><td>REST API entry point</td><td><code>Http403ForbiddenEntryPoint</code></td><td><code>o.s.s.web.authentication</code></td></tr>
   <tr><td>Current auth access</td><td><code>SecurityContextHolder</code></td><td><code>o.s.s.core.context</code></td></tr>
   <tr><td>Role representation</td><td><code>SimpleGrantedAuthority</code></td><td><code>o.s.s.core.authority</code></td></tr>
@@ -1341,7 +1419,7 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
 
 <br>
 <p style="color: var(--muted); font-size: 13px; text-align: center;">
-  Spring Security 7.x + Spring Boot 4.0.3 + Java 25 · bootstrap-iwa/product module · 2026-06-09
+  Spring Security 6.5.x + Spring Boot 3.5.x + Java 17 · bootstrap-iwa/product module · 2026-06-09
 </p>
 
 </main>
@@ -1367,7 +1445,6 @@ curl -i -X DELETE http://localhost:8081/v1/products/&lt;id&gt; \
   );
   overlay.addEventListener('click', closeSidebar);
 
-  // Close sidebar after tapping a nav link on mobile
   sidebar.querySelectorAll('a').forEach(a =>
     a.addEventListener('click', () => {
       if (window.innerWidth <= 768) closeSidebar();
