@@ -8,6 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +27,7 @@ class ProductController {
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     private final ProductService productService;
+
     private final ProductMapper productMapper;
 
     ProductController(ProductService productService, ProductMapper productMapper) {
@@ -32,8 +36,8 @@ class ProductController {
     }
 
     @GetMapping
-    ResponseEntity<Page<ProductResponse>> list(Pageable pageable) {
-        log.debug("Fetching products page {} size {}", pageable.getPageNumber(), pageable.getPageSize());
+    ResponseEntity<Page<ProductResponse>> list(Pageable pageable, @AuthenticationPrincipal UserDetails currentUser) {
+        log.debug("User {} fetching products page {} size {}", currentUser.getUsername(), pageable.getPageNumber(), pageable.getPageSize());
         Page<ProductResponse> products = productService.findAll(pageable).map(productMapper::toResponse);
         return ResponseEntity.ok(products);
     }
@@ -46,6 +50,7 @@ class ProductController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('PRODUCT_MANAGER', 'ADMIN')")
     ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest request) {
         log.info("Creating product with samAccountName: {}", request.samAccountName());
         Product product = productMapper.toEntity(request);
@@ -55,6 +60,7 @@ class ProductController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('PRODUCT_MANAGER', 'ADMIN')")
     ResponseEntity<ProductResponse> update(@PathVariable String id, @Valid @RequestBody UpdateProductRequest request) {
         log.info("Updating product with id: {}", id);
         Product product = productMapper.toEntity(request);
@@ -63,6 +69,7 @@ class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     ResponseEntity<Void> delete(@PathVariable String id) {
         log.info("Deleting product with id: {}", id);
         productService.delete(new ObjectId(id));
