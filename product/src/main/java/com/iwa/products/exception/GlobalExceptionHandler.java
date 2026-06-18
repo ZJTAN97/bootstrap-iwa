@@ -1,5 +1,8 @@
 package com.iwa.products.exception;
 
+import com.iwa.products.storage.BucketNotFoundException;
+import com.iwa.products.storage.MinioStorageException;
+import com.iwa.products.storage.ObjectNotFoundException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,28 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getDescription(false).replaceFirst("uri=", ""));
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler({ObjectNotFoundException.class, BucketNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleStorageNotFoundException(MinioStorageException ex, WebRequest request) {
+        log.warn("Storage resource not found: {}", ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                request.getDescription(false).replaceFirst("uri=", ""));
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(MinioStorageException.class)
+    public ResponseEntity<ErrorResponse> handleStorageException(MinioStorageException ex, WebRequest request) {
+        log.error("Storage operation failed: {}", ex.getMessage(), ex);
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Storage Error",
+                "A storage operation failed",
+                request.getDescription(false).replaceFirst("uri=", ""));
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(Exception.class)

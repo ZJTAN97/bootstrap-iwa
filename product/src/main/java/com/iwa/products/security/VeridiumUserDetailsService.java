@@ -11,12 +11,10 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Service;
 
 @Service
-class VeridiumUserDetailsService
-        implements AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> {
+class VeridiumUserDetailsService implements AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> {
 
     @Override
-    public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken token)
-            throws UsernameNotFoundException {
+    public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken token) throws UsernameNotFoundException {
         String samAccountName = (String) token.getPrincipal();
 
         if (samAccountName == null || samAccountName.isBlank()) {
@@ -24,9 +22,7 @@ class VeridiumUserDetailsService
         }
 
         Collection<? extends GrantedAuthority> authorities =
-                token.getDetails() instanceof VeridiumAuthDetails details
-                        ? details.getGrantedAuthorities()
-                        : List.of();
+                token.getDetails() instanceof VeridiumAuthDetails details ? details.getGrantedAuthorities() : List.of();
 
         return User.withUsername(samAccountName)
                 .password("")

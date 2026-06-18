@@ -37,7 +37,11 @@ class ProductController {
 
     @GetMapping
     ResponseEntity<Page<ProductResponse>> list(Pageable pageable, @AuthenticationPrincipal UserDetails currentUser) {
-        log.debug("User {} fetching products page {} size {}", currentUser.getUsername(), pageable.getPageNumber(), pageable.getPageSize());
+        log.debug(
+                "User {} fetching products page {} size {}",
+                currentUser.getUsername(),
+                pageable.getPageNumber(),
+                pageable.getPageSize());
         Page<ProductResponse> products = productService.findAll(pageable).map(productMapper::toResponse);
         return ResponseEntity.ok(products);
     }

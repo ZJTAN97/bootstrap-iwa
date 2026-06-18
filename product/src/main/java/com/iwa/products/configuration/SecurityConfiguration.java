@@ -24,8 +24,7 @@ class SecurityConfiguration {
 
     private final AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> userDetailsService;
 
-    SecurityConfiguration(
-            AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> userDetailsService) {
+    SecurityConfiguration(AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
@@ -34,9 +33,10 @@ class SecurityConfiguration {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(veridiumPreAuthFilter(), UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/actuator/health")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new Http403ForbiddenEntryPoint()))
                 .build();
     }

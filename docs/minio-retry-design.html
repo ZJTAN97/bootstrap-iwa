@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MinIO Retry Design: RetryTemplate vs @Retryable</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #181b22;
+    --panel-alt: #1f232c;
+    --border: #2a2f3a;
+    --text: #d7dce4;
+    --muted: #8b93a3;
+    --accent: #6ea8fe;
+    --good: #4ade80;
+    --bad: #f87171;
+    --warn: #fbbf24;
+    --code-bg: #11141a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 2rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-size: 1.05rem; margin: 0 0 40px; }
+  h2 {
+    font-size: 1.35rem;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.1rem; margin: 28px 0 10px; color: var(--accent); }
+  p { margin: 0 0 16px; }
+  code {
+    font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: #e3e8f0;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; }
+  .verdict {
+    background: linear-gradient(135deg, #1a2436, #16202e);
+    border: 1px solid #2d4060;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 0 0 36px;
+  }
+  .verdict strong { color: var(--accent); }
+  .reason {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 0 0 18px;
+  }
+  .reason h3 { margin-top: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 0.92rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { background: var(--panel-alt); font-weight: 600; }
+  td:first-child { white-space: nowrap; color: var(--muted); }
+  .yes { color: var(--good); font-weight: 600; }
+  .no { color: var(--bad); font-weight: 600; }
+  .tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .tag.keep { background: #14331f; color: var(--good); border: 1px solid #1f5631; }
+  .callout {
+    background: #2a2010;
+    border: 1px solid #5c4715;
+    border-left: 4px solid var(--warn);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 0.95rem;
+  }
+  .callout strong { color: var(--warn); }
+  .flow {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .flow .hl { color: var(--accent); }
+  .flow .err { color: var(--bad); }
+  footer { margin-top: 64px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>MinIO Retry Design</h1>
+  <p class="sub">Why <code>RetryTemplate</code> beats <code>@Retryable</code> for <code>MinioService</code></p>
+
+  <div class="verdict">
+    <p style="margin:0"><strong>Verdict:</strong> Keep the programmatic <code>RetryTemplate</code>.
+    The <code>@Retryable</code> annotation looks simpler on the surface, but it fights four
+    properties this service depends on. Switching would make the code <em>more</em> complex,
+    not less, and would quietly change retry behaviour.</p>
+  </div>
+
+  <h2>The current design</h2>
+  <p>
+    Every public method funnels through one private <code>execute(...)</code> helper. That helper
+    does two jobs: it runs the call (optionally wrapped in retry) and it translates the MinIO SDK's
+    checked exceptions into the project's <code>MinioStorageException</code> hierarchy.
+  </p>
+  <pre><code>private &lt;T&gt; T execute(String bucket, String objectPath, String operation,
+                     boolean retryable, MinioCall&lt;T&gt; call) {
+    try {
+        return retryable ? retryTemplate.execute(ctx -&gt; call.call()) : call.call();
+    } catch (ErrorResponseException e) {
+        throw translate(bucket, objectPath, operation, e);   // SDK -&gt; domain exception
+    } catch (Exception e) {
+        throw new MinioStorageException(...);
+    }
+}</code></pre>
+  <p>
+    The key detail: the <code>RetryTemplate</code> wraps <em>only the raw SDK call</em>
+    (<code>ctx -&gt; call.call()</code>). Exception translation happens <em>outside</em> the retry,
+    in the surrounding <code>catch</code> blocks. The retry classifier therefore sees the original
+    <code>IOException</code> / <code>ServerException</code> — never the translated domain exception.
+  </p>
+
+  <h2>Why <code>@Retryable</code> is the wrong fit</h2>
+
+  <div class="reason">
+    <h3>1. Per-call retry toggle</h3>
+    <p>
+      <code>execute(...)</code> takes a <code>boolean retryable</code>. Idempotent reads
+      (<code>getObject</code>, <code>statObject</code>, <code>listObjects</code>) retry; stream
+      uploads and non-idempotent writes (<code>putObject</code>) pass <code>false</code> and never
+      retry — retrying a half-consumed stream would corrupt the upload.
+    </p>
+    <p>
+      <code>@Retryable</code> is fixed per method. To get the same behaviour you would have to split
+      retrying and non-retrying operations into separate annotated methods, or duplicate logic. The
+      boolean flag keeps it to a single code path.
+    </p>
+  </div>
+
+  <div class="reason">
+    <h3>2. The classifier must see the RAW SDK exception</h3>
+    <p>
+      With <code>RetryTemplate</code>, retry decisions are made on <code>IOException</code> /
+      <code>ServerException</code> — before translation. A deterministic
+      <code>NoSuchKey</code> error becomes <code>ObjectNotFoundException</code> and is <em>not</em>
+      retried (it would never succeed).
+    </p>
+    <p>
+      <code>@Retryable</code> works through a Spring AOP proxy that wraps the <em>entire</em> public
+      method. Translation runs <em>inside</em> the advised method, so by the time the exception
+      reaches the retry logic it is already a <code>MinioStorageException</code>. You would be forced
+      to classify retry on the translated type and lose the clean raw-exception distinction.
+    </p>
+    <div class="flow">
+      <strong style="color:var(--good)">RetryTemplate (current)</strong><br>
+      call() → <span class="err">IOException</span> → <span class="hl">retry sees IOException → RETRY</span> → … → translate → MinioStorageException<br>
+      <br>
+      <strong style="color:var(--bad)">@Retryable</strong><br>
+      [proxy[ call() → <span class="err">IOException</span> → translate → <span class="err">MinioStorageException</span> ]] → <span class="hl">retry sees MinioStorageException</span> (too late, info lost)
+    </div>
+  </div>
+
+  <div class="reason">
+    <h3>3. Self-invocation proxy trap</h3>
+    <p>
+      Spring AOP only applies <code>@Retryable</code> when a method is called from <em>outside</em>
+      the bean, through the proxy. Internal calls — e.g. <code>presignedGetUrl</code> delegating to
+      the private <code>presignedUrl</code> helper — bypass the proxy and would silently get no
+      retry. The programmatic template has no such trap: retry is wherever you write
+      <code>retryTemplate.execute(...)</code>.
+    </p>
+  </div>
+
+  <div class="reason">
+    <h3>4. Tests stay fast and context-free</h3>
+    <p>
+      <code>MinioServiceRetryTests</code> constructs a no-backoff <code>RetryTemplate</code> and
+      injects it straight into the service constructor with a mocked <code>MinioClient</code>. No
+      Spring context, no sleeping, fully deterministic.
+    </p>
+    <pre><code>RetryTemplate retryTemplate = RetryTemplate.builder()
+        .maxAttempts(3)
+        .noBackoff()
+        .retryOn(ServerException.class)
+        .retryOn(IOException.class)
+        .traversingCauses()
+        .build();
+minioService = new MinioService(minioClient, retryTemplate);</code></pre>
+    <p>
+      <code>@Retryable</code> only activates inside a Spring context with <code>@EnableRetry</code>,
+      so the equivalent test needs <code>@SpringBootTest</code> (or manual proxy wiring) — slower and
+      heavier just to assert "it retried three times".
+    </p>
+  </div>
+
+  <h2>Side by side</h2>
+  <table>
+    <tr><th>Requirement</th><th>RetryTemplate</th><th>@Retryable</th></tr>
+    <tr><td>Per-call retry on/off</td><td class="yes">Yes — boolean flag</td><td class="no">Fixed per method</td></tr>
+    <tr><td>Classify on raw SDK exception</td><td class="yes">Yes</td><td class="no">Sees translated type</td></tr>
+    <tr><td>No self-invocation trap</td><td class="yes">Always applies</td><td class="no">Proxy-only</td></tr>
+    <tr><td>Fast unit tests, no context</td><td class="yes">Yes</td><td class="no">Needs Spring context</td></tr>
+    <tr><td>Annotation brevity</td><td class="no">More wiring</td><td class="yes">One annotation</td></tr>
+  </table>
+
+  <div class="callout">
+    <strong>When <code>@Retryable</code> would win:</strong> a uniform retry policy across all methods,
+    retrying on the translated exception is acceptable, no per-call toggle is needed, and all calls
+    arrive through the proxy. None of those hold for <code>MinioService</code>.
+  </div>
+
+  <h2>Bottom line <span class="tag keep">KEEP RetryTemplate</span></h2>
+  <p>
+    The annotation trades a tiny amount of boilerplate for loss of control over <em>what</em> gets
+    retried, <em>which exception</em> drives the decision, and <em>where</em> retry actually applies —
+    plus heavier tests. For a thin SDK wrapper whose whole point is precise exception handling, the
+    explicit <code>RetryTemplate</code> is both simpler in practice and safer.
+  </p>
+
+  <footer>
+    Generated for <code>com.iwa.products.storage.MinioService</code> · bootstrap-iwa
+  </footer>
+
+</div>
+</body>
+</html>
